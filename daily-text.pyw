@@ -63,10 +63,10 @@ class Widget(tk.Tk):
         self.y = None
 
     def do_move(self, event):
-        deltax = event.x - self.x
-        deltay = event.y - self.y
-        x = self.winfo_x() + deltax
-        y = self.winfo_y() + deltay
+        deltaX = event.x - self.x
+        deltaY = event.y - self.y
+        x = self.winfo_x() + deltaX
+        y = self.winfo_y() + deltaY
         self.geometry(f"+{x}+{y}")
 
     def start_timer(self):
