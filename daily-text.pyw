@@ -63,10 +63,10 @@ class Widget(tk.Tk):
         self.y = None
 
     def do_move(self, event):
-        deltaX = event.x - self.x
-        deltaY = event.y - self.y
-        x = self.winfo_x() + deltaX
-        y = self.winfo_y() + deltaY
+        deltax = event.x - self.x
+        deltay = event.y - self.y
+        x = self.winfo_x() + deltax
+        y = self.winfo_y() + deltay
         self.geometry(f"+{x}+{y}")
 
     def start_timer(self):
@@ -105,8 +105,17 @@ class Widget(tk.Tk):
         self.withdraw()
 
     def exit_app(self):
-        self.icon.stop()
-        self.destroy()
+        # Stop the timer if running
+        if self.timer.is_alive():
+            self.timer.cancel()
+        
+        # Stop the tray icon
+        if self.icon:
+            self.icon.stop()
+        
+        # Destroy the Tkinter window
+        self.after(0, self.destroy)
+
 
 if __name__ == "__main__":
     widget = Widget()
