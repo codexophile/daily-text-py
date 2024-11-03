@@ -1,6 +1,9 @@
 import tkinter as tk
 import time
 import threading
+from pystray import MenuItem as item
+import pystray
+from PIL import Image, ImageDraw
 
 class Widget(tk.Tk):
     def __init__(self):
@@ -32,6 +35,9 @@ class Widget(tk.Tk):
         # Start the timer to change text daily
         self.interval = 24 * 60 * 60  # Default interval is 24 hours (in seconds)
         self.start_timer()
+
+        # Create system tray icon
+        self.create_system_tray_icon()
 
     def load_text_from_file(self, filename):
         try:
@@ -71,6 +77,36 @@ class Widget(tk.Tk):
         self.current_index = (self.current_index + 1) % len(self.text_items)
         self.label.config(text=self.text_items[self.current_index])
         self.start_timer()
+
+    def create_system_tray_icon(self):
+        # Create a simple image for the icon
+        width = 64
+        height = 64
+        image = Image.new('RGB', (width, height), (255, 255, 255))
+        dc = ImageDraw.Draw(image)
+        dc.rectangle((28, 20, 36, 40), fill='black')
+        dc.rectangle((20, 28, 44, 36), fill='black')
+        
+        # Define menu items
+        menu = (
+            item('Show', self.show_window),
+            item('Hide', self.hide_window),
+            item('Exit', self.exit_app)
+        )
+        
+        # Create the icon
+        self.icon = pystray.Icon("name", image, "Daily Text", menu)
+        self.icon.run_detached()
+
+    def show_window(self):
+        self.deiconify()
+
+    def hide_window(self):
+        self.withdraw()
+
+    def exit_app(self):
+        self.icon.stop()
+        self.destroy()
 
 if __name__ == "__main__":
     widget = Widget()
