@@ -1,5 +1,4 @@
 import tkinter as tk
-import time
 import threading
 from pystray import MenuItem as item
 import pystray
