@@ -4,6 +4,8 @@ import threading
 from pystray import MenuItem as item
 import pystray
 from PIL import Image, ImageDraw
+import sys
+import os
 
 class Widget(tk.Tk):
     def __init__(self):
@@ -91,6 +93,7 @@ class Widget(tk.Tk):
         menu = (
             item('Show', self.show_window),
             item('Hide', self.hide_window),
+            item('Restart', self.restart_app),
             item('Exit', self.exit_app)
         )
         
@@ -103,6 +106,19 @@ class Widget(tk.Tk):
 
     def hide_window(self):
         self.withdraw()
+
+    def restart_app(self):
+        """Restart the entire application"""
+        # Clean up current instance
+        if self.timer.is_alive():
+            self.timer.cancel()
+        if self.icon:
+            self.icon.stop()
+        self.quit()  # Properly quit Tkinter
+        
+        # Start new process
+        os.startfile(sys.argv[0])  # Start new instance
+        sys.exit()  # Exit current instance
 
     def exit_app(self):
         # Stop the timer if running
