@@ -1,59 +1,127 @@
 import tkinter as tk
+from tkinter import ttk
 import threading
 from pystray import MenuItem as item
 import pystray
 from PIL import Image, ImageDraw
 import sys
 import os
+import textwrap
 
 class Widget(tk.Tk):
+
     def __init__(self):
         super().__init__()
         self.overrideredirect(True)
-        self.attributes('-alpha', 0.8)
-        self.geometry('200x150+100+100')
+        self.attributes('-alpha', 0.9)
+        self.geometry('400x300+100+100')  # Increased window size
+        
+        # Configure the main window
+        self.configure(bg='#f0f0f0')
+        self.frame = ttk.Frame(self, padding="10")
+        self.frame.pack(fill=tk.BOTH, expand=True)
         
         # Load text from daily-text.txt
         self.text_items = self.load_text_from_file('daily-text.txt')
         self.current_index = 0
         
-        # Create label to display text
-        self.label = tk.Label(self, text=self.text_items[self.current_index])
-        self.label.pack(pady=10)
+        # Create text display frame
+        text_frame = ttk.Frame(self.frame)
+        text_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         
-        # Create buttons to flip through text items
-        self.prev_button = tk.Button(self, text="Previous", command=self.show_previous_text)
-        self.prev_button.pack(side=tk.LEFT, padx=10)
+        # Create styled label with text wrapping
+        self.label = ttk.Label(
+            text_frame,
+            wraplength=360,  # Increased wrap length
+            justify=tk.LEFT,  # Changed to left alignment
+            padding=(15, 15),
+            style='Custom.TLabel'
+        )
+        self.label.pack(fill=tk.BOTH, expand=True)
         
-        self.next_button = tk.Button(self, text="Next", command=self.show_next_text)
-        self.next_button.pack(side=tk.RIGHT, padx=10)
+        # Create navigation frame
+        nav_frame = ttk.Frame(self.frame)
+        nav_frame.pack(fill=tk.X, pady=(0, 5))
         
-        # Bind mouse events for dragging
-        self.bind('<ButtonPress-1>', self.start_move)
-        self.bind('<ButtonRelease-1>', self.stop_move)
-        self.bind('<B1-Motion>', self.do_move)
+        # Add counter label
+        self.counter_label = ttk.Label(
+            nav_frame,
+            style='Counter.TLabel',
+            padding=(0, 0, 0, 5)
+        )
+        self.counter_label.pack(side=tk.TOP, fill=tk.X)
         
-        # Start the timer to change text daily
-        self.interval = 24 * 60 * 60  # Default interval is 24 hours (in seconds)
-        self.start_timer()
-
-        # Create system tray icon
-        self.create_system_tray_icon()
+        # Create button frame
+        button_frame = ttk.Frame(nav_frame)
+        button_frame.pack(fill=tk.X)
+        
+        # Create styled buttons
+        self.prev_button = ttk.Button(
+            button_frame,
+            text="← Previous",
+            command=self.show_previous_text,
+            style='Custom.TButton'
+        )
+        self.prev_button.pack(side=tk.LEFT, padx=5)
+        
+        self.next_button = ttk.Button(
+            button_frame,
+            text="Next →",
+            command=self.show_next_text,
+            style='Custom.TButton'
+        )
+        self.next_button.pack(side=tk.RIGHT, padx=5)
+        
+        # Configure custom styles
+        self.style = ttk.Style()
+        self.style.configure(
+            'Custom.TLabel',
+            background='#ffffff',
+            font=('Segoe UI', 11),
+            wraplength=360
+        )
+        self.style.configure(
+            'Counter.TLabel',
+            font=('Segoe UI', 9),
+            foreground='#666666',
+            padding=(0, 5),
+            anchor='center'
+        )
+        self.style.configure(
+            'Custom.TButton',
+            padding=5,
+            font=('Segoe UI', 9)
+        )
+        
+        # Show initial text
+        self.update_text()
 
     def load_text_from_file(self, filename):
         try:
             with open(filename, 'r') as file:
-                return file.readlines()
+                # Strip whitespace and filter out empty lines
+                return [line.strip() for line in file.readlines() if line.strip()]
         except FileNotFoundError:
             return ["Text file not found!"]
 
+    def update_text(self):
+        # Wrap text and update label
+        text = self.text_items[self.current_index]
+        wrapped_text = textwrap.fill(text, width=60)  # Adjusted width
+        self.label.config(text=wrapped_text)
+        
+        # Update counter label
+        total = len(self.text_items)
+        current = self.current_index + 1
+        self.counter_label.config(text=f"{current} of {total}")
+        
     def show_previous_text(self):
         self.current_index = (self.current_index - 1) % len(self.text_items)
-        self.label.config(text=self.text_items[self.current_index])
+        self.update_text()
 
     def show_next_text(self):
         self.current_index = (self.current_index + 1) % len(self.text_items)
-        self.label.config(text=self.text_items[self.current_index])
+        self.update_text()
 
     def start_move(self, event):
         self.x = event.x
@@ -76,7 +144,7 @@ class Widget(tk.Tk):
 
     def change_text(self):
         self.current_index = (self.current_index + 1) % len(self.text_items)
-        self.label.config(text=self.text_items[self.current_index])
+        self.update_text()
         self.start_timer()
 
     def create_system_tray_icon(self):
