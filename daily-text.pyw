@@ -96,6 +96,14 @@ class Widget(tk.Tk):
         # Show initial text
         self.update_text()
 
+        # Bind mouse events for dragging the window
+        self.bind('<Button-1>', self.start_move)
+        self.bind('<ButtonRelease-1>', self.stop_move)
+        self.bind('<B1-Motion>', self.do_move)
+
+        # Create system tray icon
+        self.create_system_tray_icon()
+
     def load_text_from_file(self, filename):
         try:
             with open(filename, 'r') as file:
@@ -114,7 +122,7 @@ class Widget(tk.Tk):
         total = len(self.text_items)
         current = self.current_index + 1
         self.counter_label.config(text=f"{current} of {total}")
-        
+
     def show_previous_text(self):
         self.current_index = (self.current_index - 1) % len(self.text_items)
         self.update_text()
@@ -138,23 +146,19 @@ class Widget(tk.Tk):
         y = self.winfo_y() + deltay
         self.geometry(f"+{x}+{y}")
 
-    def start_timer(self):
-        self.timer = threading.Timer(self.interval, self.change_text)
-        self.timer.start()
-
-    def change_text(self):
-        self.current_index = (self.current_index + 1) % len(self.text_items)
-        self.update_text()
-        self.start_timer()
-
     def create_system_tray_icon(self):
-        # Create a simple image for the icon
+        # Create a better visible icon
         width = 64
         height = 64
-        image = Image.new('RGB', (width, height), (255, 255, 255))
+        color = '#1e88e5'  # A nice blue color
+        
+        # Create base image with white background
+        image = Image.new('RGB', (width, height), 'white')
         dc = ImageDraw.Draw(image)
-        dc.rectangle((28, 20, 36, 40), fill='black')
-        dc.rectangle((20, 28, 44, 36), fill='black')
+        
+        # Draw a "T" symbol
+        dc.rectangle([20, 15, 44, 25], fill=color)  # Top bar
+        dc.rectangle([29, 15, 35, 49], fill=color)  # Vertical bar
         
         # Define menu items
         menu = (
@@ -164,9 +168,13 @@ class Widget(tk.Tk):
             item('Exit', self.exit_app)
         )
         
-        # Create the icon
-        self.icon = pystray.Icon("name", image, "Daily Text", menu)
-        self.icon.run_detached()
+        # Create and run the icon
+        self.icon = pystray.Icon("daily_text", image, "Daily Text", menu)
+        
+        # Run the icon in a separate thread
+        icon_thread = threading.Thread(target=self.icon.run)
+        icon_thread.daemon = True  # This ensures the thread exits when the main program exits
+        icon_thread.start()
 
     def show_window(self):
         self.deiconify()
@@ -177,7 +185,7 @@ class Widget(tk.Tk):
     def restart_app(self):
         """Restart the entire application"""
         # Clean up current instance
-        if self.timer.is_alive():
+        if hasattr(self, 'timer') and self.timer.is_alive():
             self.timer.cancel()
         if self.icon:
             self.icon.stop()
@@ -189,16 +197,17 @@ class Widget(tk.Tk):
 
     def exit_app(self):
         # Stop the timer if running
-        if self.timer.is_alive():
+        if hasattr(self, 'timer') and self.timer.is_alive():
             self.timer.cancel()
         
-        # Stop the tray icon
-        if self.icon:
+        # Stop the system tray icon if it exists
+        if hasattr(self, 'icon') and self.icon is not None:
             self.icon.stop()
         
-        # Destroy the Tkinter window
-        self.after(0, self.destroy)
-
+        # Destroy the window and quit
+        self.quit()
+        self.destroy()
+        sys.exit()
 
 if __name__ == "__main__":
     widget = Widget()
